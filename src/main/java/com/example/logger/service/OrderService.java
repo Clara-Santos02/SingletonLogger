@@ -4,6 +4,7 @@ import com.example.logger.dto.OrderRequestDTO;
 import com.example.logger.entities.Order;
 import com.example.logger.entities.Product;
 import com.example.logger.entities.User;
+import com.example.logger.repository.OrderRepository;
 import com.example.logger.singleton.AppLogger;
 import com.example.logger.singleton.LogLevel;
 
@@ -12,21 +13,17 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class OrderService {
 
-    private final ConcurrentHashMap<Long, Order> orders = new ConcurrentHashMap<>();
-
-    private final AtomicLong counter = new AtomicLong(1);
-
+    private final OrderRepository orderRepository;
     private final UserService userService;
     private final ProductService productService;
 
-    public OrderService(UserService userService, ProductService productService) {
+    public OrderService(OrderRepository orderRepository, UserService userService, ProductService productService) {
 
+        this.orderRepository = orderRepository;
         this.userService = userService;
         this.productService = productService;
     }
@@ -34,7 +31,7 @@ public class OrderService {
     public Order createOrder(OrderRequestDTO request) {
 
         User user =
-                userService.serchById(
+                userService.searchById(
                         request.getUserId()
                 );
 
@@ -52,38 +49,32 @@ public class OrderService {
                                 )
                         );
 
-        Long id = counter.getAndIncrement();
+        Order order = new Order();
+        order.setUser(user);
+        order.setProduct(product);
+        order.setQuantity(request.getQuantity());
+        order.setUnitPrice(product.getPrice());
+        order.setTotal(total);
+        order.setStatus("CREATED");
+        order.setCreatedAt(LocalDateTime.now());
 
-        Order order = new Order(
-                id,
-                user.getId(),
-                product.getId(),
-                product.getName(),
-                request.getQuantity(),
-                product.getPrice(),
-                total,
-                "CREATED",
-                LocalDateTime.now()
-        );
-
-        orders.put(id, order);
+        order = orderRepository.save(order);
 
         AppLogger.getInstance().log(
                 LogLevel.ORDER,
-                "Order #" + id
+                "Order #"
+                        + order.getId()
                         + " created for "
                         + user.getName()
-                        + " - Product: "
+                        + " - "
                         + product.getName()
-                        + " - Quantity: "
-                        + request.getQuantity()
-                        + " - Total: R$ "
+                        + " - Total R$ "
                         + total
         );
         return order;
     }
 
     public List<Order> listOrders() {
-        return List.copyOf(orders.values());
+        return orderRepository.findAll();
     }
 }

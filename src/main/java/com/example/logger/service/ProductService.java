@@ -2,6 +2,7 @@ package com.example.logger.service;
 
 import com.example.logger.dto.ProductRequestDTO;
 import com.example.logger.entities.Product;
+import com.example.logger.repository.ProductRepository;
 import com.example.logger.singleton.AppLogger;
 import com.example.logger.singleton.LogLevel;
 
@@ -10,66 +11,57 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class ProductService {
 
-    private final ConcurrentHashMap<Long, Product> products =
-            new ConcurrentHashMap<>();
+    private final ProductRepository productRepository;
 
-    private final AtomicLong counter =
-            new AtomicLong(1);
+    public ProductService(ProductRepository productRepository){
+        this.productRepository = productRepository;
+    }
 
     public Product createProduct(ProductRequestDTO request) {
 
-        Long id = counter.getAndIncrement();
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setStock(request.getStock());
+        product.setPrice(request.getPrice());
 
-        Product product = new Product(
-                id,
-                request.getName(),
-                request.getPrice(),
-                request.getStock()
-        );
-
-        products.put(id, product);
+        product = productRepository.save(product);
 
         AppLogger.getInstance().log(
                 LogLevel.PRODUCT,
                 "Product "
                         + product.getName()
                         + " registered with ID "
-                        + id
+                        + product.getId()
         );
 
         return product;
     }
 
     public List<Product> listProducts() {
-        return List.copyOf(products.values());
+        return productRepository.findAll();
     }
 
     public Product searchById(Long id) {
+        return productRepository
+                .findById(id)
+                .orElseThrow(() -> {
 
-        Product product = products.get(id);
+                    AppLogger.getInstance().log(
+                            LogLevel.ERROR,
+                            "Product with ID "
+                                    + id
+                                    + " not found."
+                    );
 
-        if (product == null) {
-
-            AppLogger.getInstance().log(
-                    LogLevel.ERROR,
-                    "Product with ID "
-                            + id
-                            + " not found."
-            );
-
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Product not found"
-            );
-        }
-
-        return product;
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Product not found"
+                    );
+                });
     }
 
     public synchronized Product reserveStock(Long id, int quantity) {
@@ -77,17 +69,23 @@ public class ProductService {
         Product product = searchById(id);
 
         if (product.getStock() < quantity) {
+
             AppLogger.getInstance().log(
                     LogLevel.WARNING,
-                    "Insufficient stock for product "
+                    "Insufficient stock for "
                             + product.getName()
             );
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient stock");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Insufficient stock."
+            );
         }
 
-        product.setStock(product.getStock() - quantity);
+        product.setStock(
+                product.getStock() - quantity
+        );
 
-        return product;
+        return productRepository.save(product);
     }
 }
