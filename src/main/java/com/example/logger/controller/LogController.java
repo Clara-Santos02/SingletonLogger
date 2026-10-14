@@ -1,6 +1,7 @@
 package com.example.logger.controller;
 
 import com.example.logger.singleton.AppLogger;
+import com.example.logger.singleton.LogEntry;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 public class LogController {
 
     @GetMapping
-    public List<String> listLogs() {
+    public List<LogEntry> listLogs() {
 
         AppLogger logger = AppLogger.getInstance();
 

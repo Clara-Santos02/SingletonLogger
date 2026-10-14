@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/orders")
 public class OrderController {
 
-    @PostMapping
+ /*   @PostMapping
     public ResponseEntity<String> createOrder(
             @RequestBody OrderRequestDTO request) {
 
@@ -26,5 +26,5 @@ public class OrderController {
         return ResponseEntity.ok(
                 "Order created successfully"
         );
-    }
+    } */
 }
