@@ -72,30 +72,22 @@ public class ProductService {
         return product;
     }
 
-  /*  public synchronized Order reservarEstoque(
-            Long id,
-            int quantidade) {
+    public synchronized Product reserveStock(Long id, int quantity) {
 
-        Order produto = searchById(id);
+        Product product = searchById(id);
 
-        if (produto.getEstoque() < quantidade) {
-
+        if (product.getStock() < quantity) {
             AppLogger.getInstance().log(
                     LogLevel.WARNING,
-                    "Estoque insuficiente para o produto "
-                            + produto.getNome()
+                    "Insufficient stock for product "
+                            + product.getName()
             );
 
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Estoque insuficiente"
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient stock");
         }
 
-        produto.setEstoque(
-                produto.getEstoque() - quantidade
-        );
+        product.setStock(product.getStock() - quantity);
 
-        return produto;
-    } */
+        return product;
+    }
 }
